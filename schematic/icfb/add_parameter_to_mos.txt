@@ -1,0 +1,16 @@
+Toos -> CDF -> Edit
+
+CDF type must choose Base
+
+Component Parameters -> add 
+Simulation Information -> Edit -> auCdl
+
+cdfId->simInfo->auCdl = '( nil
+       netlistProcedure  ansCdlCompPrim ==> modify as _ansCdlCompParamPrim (or maybe ansCdlCompParamPrim)
+       instParameters    (M L W)
+       componentName     yourComponentName
+       termOrder         (PLUS MINUS)
+       propMapping       (nil M m L l W w)
+       namePrefix        "R"
+       modelName         "yourModelName"
+   )
