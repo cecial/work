@@ -17,9 +17,11 @@ EOF
 }
 
 my ($cir,$topcell,@xdevices)=@ARGV;
+$topcell=lc($topcell);
 
 my $cir_content_ref=&__read_cir($cir);
 
+my @global_pin=();
 my %global_param=();
 my %cir=();
 
@@ -50,12 +52,17 @@ while (my $line=shift(@$cir_content_ref)) {
         my %h=&__create_subckt(@con);
         %cir=(%cir,%h);
         next;
+    } elsif ($line=~s/^\s*\.global\b\s*//i) {
+        @global_pin=split(/\s+/,$line);
+    } else {
+        print "WARN: $line is not recgnized\n";
     }
 }
 
 my %t=();
 
 #print "here1\n";
+#
 
 __flattern($topcell,\%cir,"",$cir{$topcell}{"__pin"},\%t);
 
@@ -71,8 +78,8 @@ sub __flattern {
         $pin_to_net_map{$cir_hash->{$subckt}{"__pin"}[$i]} = $net_connect_to_pin->[$i];
     }
 
-    my %subckt_header_param=%{$cir_hash->{$subckt}{"__parameter_hash"}};;
     #print "$subckt @{$cir_hash->{$subckt}{__parameter}}\n";
+    my %subckt_header_param=%{$cir_hash->{$subckt}{"__parameter_hash"}};;
     foreach my $p (@{$cir_hash->{$subckt}{"__parameter"}}) {
         my $value=$cir_hash->{$subckt}{"__parameter_hash"}{$p};
         my @words=&__get_all_words($value);
@@ -112,7 +119,7 @@ sub __flattern {
                 } elsif (defined($global_param{$w})) {
                     $value=~s/\b\Q$w\E\b/$global_param{$w}/ig;
                 } else {
-                    print "$value of block $x in $subckt has no global or local parameter to replace\n";
+                    print "\nERROR1: $value of block $x in $subckt has no global or local parameter to replace\n";
                 }
             }
 
@@ -145,7 +152,9 @@ sub __flattern {
         print "$hier_path$x";
         #print "here device3\n";
         foreach my $n (@{$cir_hash->{$subckt}{"__device_hash"}{$x}{"__connect"}}) {
-            if (__is_exist_in_array($n,$cir_hash->{$subckt}{"__pin"})) {
+            if (__is_exist_in_array($n,\@global_pin)) {
+                print " $n";
+            } elsif (__is_exist_in_array($n,$cir_hash->{$subckt}{"__pin"})) {
                 print " $pin_to_net_map{$n}";
             } elsif (__is_exist_in_array($n,$cir_hash->{$subckt}{"__net"})) {
                 print " $hier_path$n";
@@ -173,7 +182,7 @@ sub __flattern {
                 } elsif (defined($global_param{$w})) {
                     $value=~s/\b\Q$w\E\b/$global_param{$w}/ig;
                 } else {
-                    print "$value of device $x in $subckt has no global or local parameter to replace\n";
+                    print "\nERROR2: $value of device $x in $subckt has no global or local parameter to replace\n";
                 }
             }
             #print " $cir_hash->{$subckt}{__device_hash}{$x}{__value}";
@@ -184,14 +193,16 @@ sub __flattern {
 
         foreach my $k (@{$cir_hash->{$subckt}{"__device_hash"}{$x}{"__parameter"}}) {
             my $value=$cir_hash->{$subckt}{__device_hash}{$x}{__parameter_hash}{$k};
+            #print "\n# $k # $value#\n";
             my @words=&__get_all_words($value);
             foreach my $w (@words) {
+                #print "## $w ##\n";
                 if (defined($subckt_header_param{$w}) ) {
                     $value=~s/\b\Q$w\E\b/$subckt_header_param{$w}/ig;
                 } elsif (defined($global_param{$w})) {
                     $value=~s/\b\Q$w\E\b/$global_param{$w}/ig;
                 } else {
-                    print "$value of device $x in $subckt has no global or local parameter to replace\n";
+                    print "\nERROR3: $value of device $x in $subckt has no global or local parameter to replace\n";
                 }
             }
             #print " $k=$cir_hash->{$subckt}{__device_hash}{$x}{__parameter_hash}{$k}";
@@ -309,7 +320,7 @@ sub __create_subckt {
                 }
             }
         } elsif ($line=~/^\s*[rc]/i) {
-            my ($index,$p,$n,$value)=split(/\s+/,$_);
+            my ($index,$p,$n,$value)=split(/\s+/,$line);
             push @{$hash{$subckt_name}{"__device"}},$index;
             $hash{$subckt_name}{"__net_hash"}{$p}=1;
             $hash{$subckt_name}{"__net_hash"}{$n}=1;
@@ -365,6 +376,7 @@ sub __create_subckt {
                     $hash{$subckt_name}{"__net_hash"}{$p}=1;
                 }
             }
+        } elsif ($line=~/^\s*.global/i) {
         } elsif ($line=~/^\s*\.ends/i) {
         } else {
             print "unknown line $line\n";
@@ -411,7 +423,8 @@ sub __remove_cir_plus {
     while (my $line=shift(@_)) {
         $line=~s/\$.*//g;
         next if ($line=~/^\s*[\*\$]/ || $line=~/^\s*$/);
-        while($line=~s/((['"]).*?)\s+(.*?\2)/$1$3/g) {}
+        #while($line=~s/((['"]).*?)\s+(.*?\2)/$1$3/g) {}
+        $line=&__remove_space_inside_quote($line);
         $tmp_l .= $line;
     }
     $tmp_l=~s/\n\s*\+/ /g;
@@ -439,6 +452,29 @@ sub __is_exist_in_array {
     }
 
     return 0;
+}
+
+sub __remove_space_inside_quote {
+
+    my $line=$_[0];
+    $line=~s/\s*=\s*/=/g;
+    my @tmp=split(/\s+/,$line);
+    
+    my $find_eq=0;
+
+    my $new_line=shift(@tmp);
+
+    foreach my $e (@tmp) {
+        if ($e=~/=/) {
+            $find_eq=1;
+            $new_line .= " $e";
+        } elsif ($find_eq == 1) {
+            $new_line .= "$e";
+        } else {
+            $new_line .= " $e";
+        }
+    }
+    return "$new_line\n";
 }
 
 ################################################################################
