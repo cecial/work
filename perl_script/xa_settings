@@ -23,6 +23,7 @@
 .option XA_CMD="set_dc_option -method adaptive spice "
 
 ==> xa_timing_accurate_opts.sp <==
+.option XA_CMD="set_sim_level 6"
 .option XA_CMD="set_resistor_option	-rule	2	-min	0	-max	1000000000"
 .option XA_CMD="set_duplicate_rule	-select_model	last"
 .option XA_CMD="set_duplicate_rule	-subckt_port	on"
