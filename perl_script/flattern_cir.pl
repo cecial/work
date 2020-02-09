@@ -106,7 +106,11 @@ sub __flattern {
                 push @net_to_pin,$pin_to_net_map{$n};
                 #print "$n is pin, @tmp\n";
             } elsif (__is_exist_in_array($n,$cir_hash->{$subckt}{"__net"})) {
-                push @net_to_pin,"$hier_path$n";
+                if (__is_exist_in_array($n,\@global_pin)) {
+                    push @net_to_pin,"$n";
+                } else {
+                    push @net_to_pin,"$hier_path$n";
+                }
                 #print "$n is net, @tmp\n";
             } else {
                 print "error: $n is not pin or net \n";
