@@ -72,7 +72,14 @@ __flattern($topcell,\%cir,"",$cir{$topcell}{"__pin"},\%t);
 
 sub __flattern {
     my ($subckt,$cir_hash,$hier_path,$net_connect_to_pin,$parent_param)=@_;
-
+    
+    unless (defined($cir_hash->{$subckt})) {
+        print "\n";
+        print " subckt \"$subckt\" is not defined in netlist, maybe this is an X-device?\n";
+        print "  please put it in command \n\n";
+        exit;
+    }
+    
     my %pin_to_net_map=();
     foreach my $i (0..$#{$cir_hash->{$subckt}{"__pin"}}) {
         $pin_to_net_map{$cir_hash->{$subckt}{"__pin"}[$i]} = $net_connect_to_pin->[$i];
