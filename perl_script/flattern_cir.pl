@@ -18,6 +18,7 @@ EOF
 
 my ($cir,$topcell,@xdevices)=@ARGV;
 $topcell=lc($topcell);
+@xdevices = map {lc} @xdevices;
 
 my $cir_content_ref=&__read_cir($cir);
 
