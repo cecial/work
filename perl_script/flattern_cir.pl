@@ -37,6 +37,9 @@ while (my $line=shift(@$cir_content_ref)) {
             $global_param{$tmp[0]}=$tmp[1];
         }
     } elsif ($line=~/^\.subckt\s+(\w+)/) {
+        if ($1 eq $topcell) {
+            print "$line\n";
+        }
         my @con=($line);
         while (my $line2=shift(@$cir_content_ref)) {
             if ($line2=~/^\.ends/) {
@@ -66,7 +69,7 @@ my %t=();
 #
 
 __flattern($topcell,\%cir,"",$cir{$topcell}{"__pin"},\%t);
-
+print ".ends\n"
 
 ################################################################################
 
