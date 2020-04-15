@@ -34,9 +34,11 @@ class SPRAM:
 
 
     example:
-    import spram_func
+    import sys
+    sys.path.append(".") # here change the . to the path where you put SPRAM.py
+    import SPRAM
 
-    x=spram_func.SPRAM(words=1024, bits=8,cycle_time=20, clkname = "CK")
+    x=SPRAM.SPRAM(words=1024, bits=8,cycle_time=20, clkname = "CK")
     x.comment("now write")
     x.write(0,"01100110")
     x.comment("now read")
