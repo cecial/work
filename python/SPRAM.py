@@ -360,9 +360,9 @@ class SPRAM:
                     clk  = "i", \
                     ce   = "i", \
                     we   = "i", \
-                    adr  = "i", \
-                    di   = "i", \
-                    do   = "o"))
+                    adr  = "i" * self.adr_width, \
+                    di   = "i" * self.bits, \
+                    do   = "o" * self.bits))
 
             f.write(output_format1.format(\
                     name = "radix", \
