@@ -2,16 +2,23 @@
 #use lib "";
 use GDS2;
 
-if (@ARGV < 1) {
+if (@ARGV < 2) {
     &usage();
 }
 
 my $gdsin=shift(@ARGV);
-my $gdsout="$gdsin.remove_text.gds";
+my $gdsout="$gdsin.remove_layer.gds";
 
 unless (-e "$gdsin") {
     print "\nERROR: $gdsin doesn't exist, please check\n\n";
     exit;
+}
+
+my @delete_layer=();
+
+if($ARGV[0] =~ /^(\d+):(\d+)$/) {
+    $delete_layer[$1][$2]=1;
+    shift(@ARGV);
 }
 
 my %except_in_cell=();
@@ -45,6 +52,8 @@ while (my $a = shift(@ARGV)) {
                 $only_in_cell{$e}=1;
             }
         }
+    } elsif ($a=~/^(\d+):(\d+)$/) {
+        $delete_layer[$1][$2]=1;
     } else {
         print "\nERROR: unknown option $a\n\n";
         &usage();
@@ -55,11 +64,10 @@ my $gds2IN = new GDS2(-fileName=>$gdsin);
 my $gds2OUT = new GDS2(-fileName=>">$gdsout");
 
 my $find_delete_cell=0;
-my $find_text=0;
+my $find_layer=0;
 my @tmp_records=();
 my $layer_number="";
 my $layer_type="";
-my $string="";
 
 my $cell="";
 
@@ -85,30 +93,40 @@ while (my $record = $gds2IN -> readGds2Record) {
 
         $gds2OUT -> printRecord(-data=>$record);
 
-    } elsif ($gds2IN -> returnRecordTypeString eq "TEXT") {
-        $find_text=1;
+    } elsif ($gds2IN -> returnRecordTypeString eq "BOUNDARY" || $gds2IN -> returnRecordTypeString eq "TEXT" || $gds2IN -> returnRecordTypeString eq "PATH") {
+        push @tmp_records,$record;
+        $find_layer=1;
         $layer_number="";
         $layer_type="";
-        $string="";
-        $gds2OUT -> printRecord(-data=>$record) if ($find_delete_cell==0 || $find_text==0);
     } elsif ($gds2IN -> returnRecordTypeString eq "LAYER") {
         $layer_number = $gds2IN -> returnLayer;
-        $gds2OUT -> printRecord(-data=>$record) if ($find_delete_cell==0 || $find_text==0);
-    } elsif ($gds2IN -> returnRecordTypeString eq "TEXTTYPE") {
-        $layer_type = $gds2IN -> returnTexttype;
-        $gds2OUT -> printRecord(-data=>$record) if ($find_delete_cell==0 || $find_text==0);
-    } elsif ($gds2IN -> returnRecordTypeString eq "STRING") {
-        $string = $gds2IN -> returnString;
-        $gds2OUT -> printRecord(-data=>$record) if ($find_delete_cell==0 || $find_text==0);
-    } elsif ($gds2IN -> returnRecordTypeString eq "ENDEL" ) {
-        if ($find_delete_cell==1 && $find_text==1) {
-            print "INFO: delete $string ($layer_number:$layer_type) in cell \"$cell\"\n";
+        push @tmp_records,$record if ($find_layer==1);
+    } elsif ($gds2IN -> returnRecordTypeString eq "DATATYPE" || $gds2IN -> returnRecordTypeString eq "TEXTTYPE") {
+        if ($gds2IN -> returnDatatype != "-1") {
+            $layer_type = $gds2IN -> returnDatatype;
+        }
+        if ($gds2IN -> returnTexttype != "-1") {
+            $layer_type = $gds2IN -> returnTexttype;
+        }
+        push @tmp_records,$record if ($find_layer==1);
+
+    } elsif ($gds2IN -> returnRecordTypeString eq "ENDEL" && $find_layer==1) {
+        push @tmp_records,$record;
+        if ($find_delete_cell==1 && $find_layer==1 && defined($delete_layer[$layer_number][$layer_type])) {
+            print "INFO: delete layer $layer_number:$layer_type in cell \"$cell\"\n";
+        } else {
+            foreach my $r (@tmp_records) {
+                $gds2OUT -> printRecord(-data=>$r);
+            }
+        }
+        @tmp_records=();
+        $find_layer=0;
+    } else {
+        if ($find_layer==1) {
+            push @tmp_records,$record;
         } else {
             $gds2OUT -> printRecord(-data=>$record);
         }
-        $find_text=0;
-    } else {
-        $gds2OUT -> printRecord(-data=>$record) if ($find_delete_cell==0 || $find_text==0);
     }
 }
 
@@ -118,12 +136,13 @@ $gds2OUT -> close;
 sub usage {
     print <<EOF;
 
-    $0 <gds file> [-except <cell1> [<cell2> ...] | -only <cell1> [<cell2> ...]]
+    $0 <gds file> <layer_number1:layer_type1> [<layer_number2:layer_type2> ...] [-except <cell1> [<cell2> ...] | -only <cell1> [<cell2> ...]]
 
     ---
     gds file                : gds file
-    -except                 : delete text in all cells in gds file except the excluded cells
-    -only                   : delete text in specified cells
+    layer_number:layer_type : layer number and type, like 10:0
+    -except                 : delete all specified layers in all cells in gds file except the excluded cells
+    -only                   : delete all specified layers in specified cells
                             : if -except or -only not specified, will delete layers in all cells
     ---
 
