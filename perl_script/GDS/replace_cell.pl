@@ -121,9 +121,11 @@ while (my $record1 = $gds2IN1 -> readGds2Record) {
                     $need_import=1;
                 }
             } elsif ($gds2IN2 -> returnRecordTypeString eq "ENDSTR") {
-                $gds2OUT -> printRecord( -data=> $record2);
-                print "import done\n" if ($need_import==1);
-                $need_import=0;
+                if ($need_import == 1) {
+                    $gds2OUT -> printRecord( -data=> $record2);
+                    print "import done\n" if ($need_import==1);
+                    $need_import=0;
+                }
             } else {
                 if ($need_import == 1) {
                     $gds2OUT -> printRecord( -data=> $record2);
