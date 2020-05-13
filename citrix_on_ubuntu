@@ -1,0 +1,9 @@
+1. download citrix workspace app
+    https://www.citrix.com/downloads/workspace-app/linux/workspace-app-for-linux-latest.html
+    choose Debian Packages, Citrix Workspace app for Linux Web client (x86_64)
+2. install
+    Citrix Workspace app for Linux Web client (x86_64)
+3. firefox error fix when open citrix client 
+    前提：安装了火狐浏览器
+    sudo ln -s /usr/share/ca-certificates/mozilla/* /opt/Citrix/ICAClient/keystore/cacerts
+    sudo /opt/Citrix/ICAClient/util/ctx_rehash
