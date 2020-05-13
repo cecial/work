@@ -414,6 +414,5 @@ class SPRAM:
                             di   = self.vectors[i][j]["di"], \
                             do   = self.vectors[i][j]["do"]))
 
-                    f.close
 
 
