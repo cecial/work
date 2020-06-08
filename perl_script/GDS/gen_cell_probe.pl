@@ -1,6 +1,13 @@
 #!/home/wangy/localperl/bin/perl
 #use lib "";
 use GDS2;
+#generate following txt file for STARRC
+#CELL SM40LL_CH_XDEC_X4
+
+#F_BK_IPV 1.19 -0.035 metal2
+#F_XCLKB_IPV 2.32 -0.035 metal2
+#E_BK_IPV 7.9 -0.035 metal2
+#E_XCLKB_IPV 9.03 -0.035 metal2
 
 $metal_map[48][2]="metal4";
 $metal_map[59][2]="metal2";
