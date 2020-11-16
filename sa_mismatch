@@ -1,0 +1,22 @@
+.option optlst=1
+*.option bisec_pushout_init=1
+
+.param delta_v = opt1(-0.2,-0.2,0.2)
+
+vrbl  rbl  0 'vh - abs(delta_v) * (1 + sign(delta_v)) / 2'
+vrblb rblb 0 'vh - abs(delta_v) * (1 - sign(delta_v)) / 2'
+vsae  sae  0 pwl(0n 0v 3n 0v 3.1n vh 5n vh 5.1n 0v)
+
+.meas tran tdelay_rd0 trig v(sae) val=vh50 rise=1
++                     targ v(q)   val=vh50 fall=1
++                     pushout=0.2n
+
+.model optmod opt
++      methold = PASSFAIL
++      RELIN   = 1e-04
+
+.tran 10ps 10ns
++   SWEEP OPTIMIZE = opt1
++   results        =tdelay_rd0
++   model          = optmod
++   monte          = 1000
